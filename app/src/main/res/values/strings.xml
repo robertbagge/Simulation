@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Accelereomter Analyser</string>
+    <string name="app_name">Accelerometer Analyser</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 
 
     <string name="activity_heading">Choose an activity...</string>
     <string-array name="activities_array">
+        <item>None</item>
         <item>Sitting</item>
         <item>Standing</item>
         <item>Walking</item>
@@ -17,8 +18,9 @@
         <item>Going by train</item>
     </string-array>
 
-    <string name="sample_rate_heading">Choose an activity...</string>
+    <string name="sample_rate_heading">Choose a sampling frequency...</string>
     <string-array name="sample_rate_array">
+        <item>None</item>
         <item>23 Hz</item>
         <item>46 Hz</item>
         <item>100 Hz</item>
