@@ -1,17 +1,53 @@
 package com.locationlocationlocation.accelereomteranalyser;
 
+
+import android.app.Activity;
+import android.graphics.drawable.Drawable;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
+import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends Activity {
+
+    private static String TAG = "Just det";
+    private static String STARTED_RECORDING = "Started recording, press stop to stop the recording and save the results to a file";
+    private static String STOPPED_RECORDING = "Stopped recording, the results has been saved to a file at: ";
+
+    //private ImageButton stopButton;
+    private Button startButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Spinner spinner = (Spinner) findViewById(R.id.activity_spinner);
+// Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.activities_array, android.R.layout.simple_spinner_item);
+// Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+// Apply the adapter to the spinner
+        spinner.setAdapter(adapter);
+        //stopButton = (ImageButton)findViewById(R.id.stop_button);
+        startButton = (Button)findViewById(R.id.start_button);
     }
 
 
@@ -35,5 +71,18 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+
+    public void startRecording(View view) {
+        ((Button)findViewById(R.id.stop_button)).setVisibility(View.VISIBLE);
+        view.setVisibility(View.GONE);
+        Toast.makeText(this, MainActivity.STARTED_RECORDING, Toast.LENGTH_LONG).show();
+    }
+
+    public void stopRecording(View view) {
+        ((Button)findViewById(R.id.start_button)).setVisibility(View.VISIBLE);
+        view.setVisibility(View.GONE);
+        Toast.makeText(this, MainActivity.STOPPED_RECORDING, Toast.LENGTH_LONG).show();
     }
 }
