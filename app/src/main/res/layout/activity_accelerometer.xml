@@ -5,13 +5,56 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
 
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="X: \nY: \nZ:"
         android:id="@+id/acceleration"
-        android:layout_alignParentTop="true"
+        android:text="X: \nY: \nZ:"
+        android:layout_marginTop="70dp"
+        android:layout_marginBottom="10dp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="55dp" />
+        />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/activity_heading"
+        android:layout_marginTop="152dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/activity_heading"
+        android:layout_centerHorizontal="true"
+        />
+
+
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/activity_spinner"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/activity_heading"
+        />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/start_button"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/activity_spinner"
+        android:layout_marginTop="30dp"
+        android:onClick="startRecording"
+        android:background="@drawable/start_button"
+        />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/stop_button"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/activity_spinner"
+        android:layout_marginTop="30dp"
+        android:onClick="stopRecording"
+        android:background="@drawable/stop_button"
+        android:visibility="gone"
+        />
 </RelativeLayout>

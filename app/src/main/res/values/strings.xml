@@ -6,4 +6,23 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_accelerometer">AccelerometerActivity</string>
 
+
+    <string name="activity_heading">Choose an activity...</string>
+    <string-array name="activities_array">
+        <item>Sitting</item>
+        <item>Standing</item>
+        <item>Walking</item>
+        <item>Cycling</item>
+        <item>Going by car</item>
+        <item>Going by bus</item>
+        <item>Going by train</item>
+    </string-array>
+
+    <string name="sample_rate_heading">Choose an activity...</string>
+    <string-array name="sample_rate_array">
+        <item>23 Hz</item>
+        <item>46 Hz</item>
+        <item>100 Hz</item>
+        <item>200 Hz</item>
+    </string-array>
 </resources>

@@ -11,11 +11,17 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 
 public class AccelerometerActivity extends Activity implements SensorEventListener {
@@ -24,6 +30,11 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     private float x,y,z;
     private TextView acceleration;
     private FileWriter writer;
+    private Button startButton;
+    private static String TAG = "Just det";
+    private static String STARTED_RECORDING = "Started recording, press stop to stop the recording and save the results to a file";
+    private static String STOPPED_RECORDING = "Stopped recording, the results has been saved to a file at: ";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,28 +43,69 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccerlerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         acceleration = (TextView)findViewById(R.id.acceleration);
+
+        Spinner spinner = (Spinner) findViewById(R.id.activity_spinner);
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.activities_array, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        spinner.setAdapter(adapter);
+        //stopButton = (ImageButton)findViewById(R.id.stop_button);
+        startButton = (Button)findViewById(R.id.start_button);
     }
 
-    public void onStartClick(View view) {
-        //Send with SENSOR DELAY INTEGERS
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_accelerometer, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void startRecording(View view) {
+        ((Button)findViewById(R.id.stop_button)).setVisibility(View.VISIBLE);
+        view.setVisibility(View.GONE);
+        Toast.makeText(this, AccelerometerActivity.STARTED_RECORDING, Toast.LENGTH_LONG).show();
         mSensorManager.registerListener(this, mAccerlerometer, SensorManager.SENSOR_DELAY_NORMAL);
-    }
 
-    public void onStopClick(View view) {
-        mSensorManager.unregisterListener(this);
-    }
-    protected void onResume() {
-        super.onResume();
-        try {
-            writer = new FileWriter("myfile.txt",true);
-        } catch (IOException e) {
-            e.printStackTrace();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_dd_MM_HH_mm_ss");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        String timestamp = sdf.format(calendar.getTime());
+
+
+        String folderPath = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/AccelerometerData";
+        if(folderExists(folderPath)) {
+            try {
+                String filePath = folderPath + "/" + timestamp + "_acc.txt";
+                writer = new FileWriter(filePath, true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    protected void onPause() {
-        super.onPause();
-
+    public void stopRecording(View view) {
+        ((Button)findViewById(R.id.start_button)).setVisibility(View.VISIBLE);
+        view.setVisibility(View.GONE);
+        Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING, Toast.LENGTH_LONG).show();
+        mSensorManager.unregisterListener(this);
         if(writer != null) {
             try {
                 writer.close();
@@ -69,7 +121,11 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
         y = event.values[1];
         z = event.values[2];
         acceleration.setText("X: " + x + "\nY: " + y + "\nZ: " + z);
-
+        try {
+            writer.write(x+","+y+","+z+"\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
