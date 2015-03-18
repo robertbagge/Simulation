@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -34,7 +35,13 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     private static String TAG = "Just det";
     private static String STARTED_RECORDING = "Started recording, press stop to stop the recording and save the results to a file";
     private static String STOPPED_RECORDING = "Stopped recording, the results has been saved to a file at: ";
-
+    private static String FAULTY_SETTINGS = "You need to choose a sample rate and an activity";
+    private enum Activities {NONE, SITTING, STANDING, WALKING, CYCLING, GOING_BY_CAR, GOING_BY_BUS, GOING_BY_TRAIN}
+    private enum SamplingRates {NONE, Hz23, Hz46, Hz100, Hz200}
+    private Activities currentActivity;
+    private SamplingRates currentSamplingRate;
+    private Context context;
+    private String filePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,14 +53,28 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
 
         Spinner spinner = (Spinner) findViewById(R.id.activity_spinner);
         // Create an ArrayAdapter using the string array and a default spinner layout
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-                R.array.activities_array, android.R.layout.simple_spinner_item);
-        // Specify the layout to use when the list of choices appears
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // Apply the adapter to the spinner
-        spinner.setAdapter(adapter);
-        //stopButton = (ImageButton)findViewById(R.id.stop_button);
-        startButton = (Button)findViewById(R.id.start_button);
+        Spinner activitySpinner = (Spinner) findViewById(R.id.activity_spinner);
+
+        ArrayAdapter<CharSequence> activityAdapter = ArrayAdapter.createFromResource(this, R.array.activities_array, android.R.layout.simple_spinner_item);
+
+        activityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        activitySpinner.setAdapter(activityAdapter);
+        activitySpinner.setOnItemSelectedListener(new ActivitiesOnItemSelectedListener());
+
+        Spinner sampleRateSpinner = (Spinner) findViewById(R.id.sample_rate_spinner);
+
+        ArrayAdapter<CharSequence> sampleRateAdapter = ArrayAdapter.createFromResource(this,
+                R.array.sample_rate_array, android.R.layout.simple_spinner_item);
+
+        sampleRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        sampleRateSpinner.setAdapter(sampleRateAdapter);
+        sampleRateSpinner.setOnItemSelectedListener(new SamplingRatesOnItemSelectedListener());
+
+        currentActivity = Activities.NONE;
+        currentSamplingRate = SamplingRates.NONE;
+        context = getApplicationContext();
     }
 
     @Override
@@ -79,40 +100,21 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     public void startRecording(View view) {
-        ((Button)findViewById(R.id.stop_button)).setVisibility(View.VISIBLE);
-        view.setVisibility(View.GONE);
-        Toast.makeText(this, AccelerometerActivity.STARTED_RECORDING, Toast.LENGTH_LONG).show();
-        mSensorManager.registerListener(this, mAccerlerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        if (validateUserInput()){
+            ((Button)findViewById(R.id.stop_button)).setVisibility(View.VISIBLE);
+            view.setVisibility(View.GONE);
+            Toast.makeText(this, AccelerometerActivity.STARTED_RECORDING, Toast.LENGTH_LONG).show();
+            startScan();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_dd_MM_HH_mm_ss");
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        String timestamp = sdf.format(calendar.getTime());
-
-
-        String folderPath = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/AccelerometerData";
-        if(folderExists(folderPath)) {
-            try {
-                String filePath = folderPath + "/" + timestamp + "_acc.txt";
-                writer = new FileWriter(filePath, true);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        }else{
+            Toast.makeText(this, AccelerometerActivity.FAULTY_SETTINGS, Toast.LENGTH_LONG).show();
         }
     }
 
     public void stopRecording(View view) {
         ((Button)findViewById(R.id.start_button)).setVisibility(View.VISIBLE);
         view.setVisibility(View.GONE);
-        Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING, Toast.LENGTH_LONG).show();
-        mSensorManager.unregisterListener(this);
-        if(writer != null) {
-            try {
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        stopScan();
     }
 
     @Override
@@ -122,7 +124,7 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
         z = event.values[2];
         acceleration.setText("X: " + x + "\nY: " + y + "\nZ: " + z);
         try {
-            writer.write(x+","+y+","+z+"\n");
+            writer.write(x + "," + y + "," + z + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -133,6 +135,51 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
 
     }
 
+    private void startScan(){
+        Log.d(TAG, "Samlingrate: " + currentSamplingRate.name());
+        mSensorManager.registerListener(this, mAccerlerometer, hzToMys(currentSamplingRate.name()));
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_dd_MM_HH_mm_ss");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        String timestamp = sdf.format(calendar.getTime());
+        String folderPath = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/AccelerometerData";
+        if(folderExists(folderPath)) {
+            try {
+                filePath = folderPath + "/" + timestamp + "_" + currentActivity.name() + "_acc.txt";
+                writer = new FileWriter(filePath, true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private int hzToMys(String hzString) {
+        int hz = Integer.valueOf(hzString.substring(2));
+        return 1000000/hz;
+    }
+
+    private void stopScan(){
+        mSensorManager.unregisterListener(this, mAccerlerometer);
+        if(writer != null) {
+            try {
+                Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private boolean validateUserInput(){
+        boolean validated = false;
+        if(currentActivity != Activities.NONE && currentSamplingRate != SamplingRates.NONE){
+            validated = true;
+        }
+
+        return validated;
+    }
+
+
     private boolean folderExists(String folderPath){
         File folder = new File(folderPath);
         boolean success = true;
@@ -140,5 +187,41 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
             success = folder.mkdir();
         }
         return success;
+    }
+
+    private class ActivitiesOnItemSelectedListener implements AdapterView.OnItemSelectedListener{
+
+        public void onItemSelected(AdapterView<?> parent, View view,
+                                   int pos, long id) {
+            // An item was selected. You can retrieve the selected item using
+            Log.d(TAG + "pos", Long.toString(parent.getItemIdAtPosition(pos)));
+            Log.d(TAG + "pos pos ", Integer.toString(pos));
+            //parent.getItemAtPosition(pos)
+            currentActivity = Activities.values()[pos];
+            Toast.makeText(context, currentActivity.name(), Toast.LENGTH_SHORT).show();
+        }
+
+        public void onNothingSelected(AdapterView<?> parent) {
+            // Another interface callback
+        }
+
+    }
+
+    private class SamplingRatesOnItemSelectedListener implements AdapterView.OnItemSelectedListener{
+
+        public void onItemSelected(AdapterView<?> parent, View view,
+                                   int pos, long id) {
+            // An item was selected. You can retrieve the selected item using
+            Log.d(TAG + "pos", Long.toString(parent.getItemIdAtPosition(pos)));
+            Log.d(TAG + "pos pos ", Integer.toString(pos));
+            //parent.getItemAtPosition(pos)
+            currentSamplingRate = SamplingRates.values()[pos];
+            Toast.makeText(context, currentSamplingRate.name(), Toast.LENGTH_SHORT).show();
+        }
+
+        public void onNothingSelected(AdapterView<?> parent) {
+            // Another interface callback
+        }
+
     }
 }
