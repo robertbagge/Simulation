@@ -12,7 +12,8 @@
         android:id="@+id/acceleration"
         android:text="X: \nY: \nZ:"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:visibility="gone"/>
 
     <TextView
         android:layout_width="wrap_content"
@@ -21,7 +22,8 @@
         android:text="X: \nY: \nZ:"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:visibility="gone"/>
 
 
     <TextView

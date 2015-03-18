@@ -41,12 +41,14 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     private static String STOPPED_RECORDING = "Stopped recording, the results has been saved to a file at: ";
     private static String FAULTY_SETTINGS = "You need to choose a sample rate and an activity";
     private enum Activities {NONE, SITTING, STANDING, WALKING, CYCLING, GOING_BY_CAR, GOING_BY_BUS, GOING_BY_TRAIN}
-    private enum SamplingRates {NONE, Hz23, Hz46, Hz100, Hz200}
+    private enum SamplingRates {NONE, Hz23, Hz46, Hz100, Hz200, FASTEST}
     private Activities currentActivity;
     private SamplingRates currentSamplingRate;
     private Context context;
     private String filePath;
     private long startTimeInMillis;
+    private AccelerometerEventListener mAccelerometerListener;
+    private MagnetometerEventListener  mMagnetometerListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +84,7 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
         currentActivity = Activities.NONE;
         currentSamplingRate = SamplingRates.NONE;
         context = getApplicationContext();
+
     }
 
     @Override
@@ -170,8 +173,10 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
 
     private void startScan(){
         Log.d(TAG, "Samlingrate: " + currentSamplingRate.name());
-        mSensorManager.registerListener(this, mAccelerometer, hzToMys(currentSamplingRate.name()));
-        //mSensorManager.registerListener(this, mMagnetometer, hzToMys(currentSamplingRate.name()));
+        mAccelerometerListener = new AccelerometerEventListener();
+        mMagnetometerListener = new MagnetometerEventListener();
+        mSensorManager.registerListener(mAccelerometerListener, mAccelerometer, hzToMys(currentSamplingRate.name()));
+        mSensorManager.registerListener(mMagnetometerListener, mMagnetometer, hzToMys(currentSamplingRate.name()));
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_dd_MM_HH_mm_ss");
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
@@ -190,12 +195,16 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     private int hzToMys(String hzString) {
+        if(hzString == SamplingRates.FASTEST.name())
+            return SensorManager.SENSOR_DELAY_FASTEST;
+
         int hz = Integer.valueOf(hzString.substring(2));
         return 1000000/hz;
     }
 
     private void stopScan(){
-        mSensorManager.unregisterListener(this);
+        mSensorManager.unregisterListener(mAccelerometerListener);
+        mSensorManager.unregisterListener(mMagnetometerListener);
         if(writer != null) {
             try {
                 Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();
@@ -260,5 +269,51 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
             // Another interface callback
         }
 
+    }
+
+    private class AccelerometerEventListener implements SensorEventListener{
+        @Override
+        public void onSensorChanged(SensorEvent event){
+            mAcceleration = event.values;
+            try {
+                writer.write(event.timestamp + ", " + event.values[0] + "," + event.values[1] + "," + event.values[2] + " " + event.sensor.getType() + "\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+    }
+
+    private class MagnetometerEventListener implements SensorEventListener{
+        @Override
+        public void onSensorChanged(SensorEvent event){
+            mGeomagnetic = event.values;
+            if (mAcceleration != null && mGeomagnetic != null) {
+                float R[] = new float[9];
+                float I[] = new float[9];
+                boolean success = SensorManager.getRotationMatrix(R, I, mAcceleration, mGeomagnetic);
+                if (success) {
+                    float orientation[] = new float[3];
+                    SensorManager.getOrientation(R, orientation);// orientation contains: azimut, pitch and roll
+                    try {
+                        writer.write(event.timestamp + ", " + 57.2957795f * orientation[0] + ", " + 57.2957795f * orientation[1] + ", " + 57.2957795f * orientation[2] + " " + event.sensor.getType() + "\n");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
     }
 }
