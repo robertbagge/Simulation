@@ -27,9 +27,13 @@ import java.util.Calendar;
 
 public class AccelerometerActivity extends Activity implements SensorEventListener {
     private SensorManager mSensorManager;
-    private Sensor mAccerlerometer;
+    private Sensor mAccelerometer;
+    private Sensor mMagnetometer;
     private float x,y,z;
+    float[] mAcceleration;
+    float[] mGeomagnetic;
     private TextView acceleration;
+    private TextView orientationText;
     private FileWriter writer;
     private Button startButton;
     private static String TAG = "Just det";
@@ -48,8 +52,10 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_accelerometer);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mAccerlerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         acceleration = (TextView)findViewById(R.id.acceleration);
+        orientationText = (TextView)findViewById(R.id.orientation);
 
         Spinner spinner = (Spinner) findViewById(R.id.activity_spinner);
         // Create an ArrayAdapter using the string array and a default spinner layout
@@ -119,14 +125,33 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event){
-        x = event.values[0];
-        y = event.values[1];
-        z = event.values[2];
-        acceleration.setText("X: " + x + "\nY: " + y + "\nZ: " + z);
-        try {
-            writer.write(x + "," + y + "," + z + "\n");
-        } catch (IOException e) {
-            e.printStackTrace();
+
+
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+            mAcceleration = event.values;
+            x = event.values[0];
+            y = event.values[1];
+            z = event.values[2];
+            acceleration.setText("X: " + event.values[0] + "\nY: " + event.values[1] + "\nZ: " + event.values[2]);
+            try {
+                writer.write(event.values[0] + "," + event.values[1] + "," + event.values[2] + "\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+            mGeomagnetic = event.values;
+        if (mAcceleration != null && mGeomagnetic != null) {
+            float R[] = new float[9];
+            float I[] = new float[9];
+            boolean success = SensorManager.getRotationMatrix(R, I, mAcceleration, mGeomagnetic);
+            if (success) {
+                float orientation[] = new float[3];
+                SensorManager.getOrientation(R, orientation);// orientation contains: azimut, pitch and roll
+                orientationText.setText("X: " + orientation[0] + "\nY: " + orientation[1] + "\nZ: " + orientation[2]);
+
+            }
         }
     }
 
@@ -137,7 +162,8 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
 
     private void startScan(){
         Log.d(TAG, "Samlingrate: " + currentSamplingRate.name());
-        mSensorManager.registerListener(this, mAccerlerometer, hzToMys(currentSamplingRate.name()));
+        mSensorManager.registerListener(this, mAccelerometer, hzToMys(currentSamplingRate.name()));
+        mSensorManager.registerListener(this, mMagnetometer, hzToMys(currentSamplingRate.name()));
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_dd_MM_HH_mm_ss");
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
@@ -159,7 +185,7 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     private void stopScan(){
-        mSensorManager.unregisterListener(this, mAccerlerometer);
+        mSensorManager.unregisterListener(this);
         if(writer != null) {
             try {
                 Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();

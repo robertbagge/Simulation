@@ -17,6 +17,16 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:id="@+id/orientation"
+        android:text="X: \nY: \nZ:"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:id="@+id/sample_rate_heading"
         android:layout_marginTop="152dp"
         android:layout_marginBottom="10dp"
