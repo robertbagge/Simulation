@@ -272,14 +272,19 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     private class AccelerometerEventListener implements SensorEventListener{
+        long previousEventTime = 0;
         @Override
         public void onSensorChanged(SensorEvent event){
+            if (previousEventTime == 0)
+                previousEventTime = event.timestamp;
+
             mAcceleration = event.values;
             try {
-                writer.write(event.timestamp + ", " + event.values[0] + "," + event.values[1] + "," + event.values[2] + " " + event.sensor.getType() + "\n");
+                writer.write(event.timestamp - previousEventTime + ", " + event.values[0] + "," + event.values[1] + "," + event.values[2] + " " + event.sensor.getType() + "\n");
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            previousEventTime = event.timestamp;
 
         }
 
@@ -290,8 +295,11 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     private class MagnetometerEventListener implements SensorEventListener{
+        long previousEventTime = 0;
         @Override
         public void onSensorChanged(SensorEvent event){
+            if (previousEventTime == 0)
+                previousEventTime = event.timestamp;
             mGeomagnetic = event.values;
             if (mAcceleration != null && mGeomagnetic != null) {
                 float R[] = new float[9];
@@ -301,13 +309,13 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
                     float orientation[] = new float[3];
                     SensorManager.getOrientation(R, orientation);// orientation contains: azimut, pitch and roll
                     try {
-                        writer.write(event.timestamp + ", " + 57.2957795f * orientation[0] + ", " + 57.2957795f * orientation[1] + ", " + 57.2957795f * orientation[2] + " " + event.sensor.getType() + "\n");
+                        writer.write(event.timestamp - previousEventTime + ", " + 57.2957795f * orientation[0] + ", " + 57.2957795f * orientation[1] + ", " + 57.2957795f * orientation[2] + " " + event.sensor.getType() + "\n");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
             }
-
+            previousEventTime = event.timestamp;
 
         }
 
