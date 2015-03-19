@@ -2,6 +2,7 @@ package com.locationlocationlocation.accelereomteranalyser;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -49,6 +50,7 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     private long startTimeInMillis;
     private AccelerometerEventListener mAccelerometerListener;
     private MagnetometerEventListener  mMagnetometerListener;
+    private Intent intent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -172,26 +174,10 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     private void startScan(){
-        Log.d(TAG, "Samlingrate: " + currentSamplingRate.name());
-        mAccelerometerListener = new AccelerometerEventListener();
-        mMagnetometerListener = new MagnetometerEventListener();
-        mSensorManager.registerListener(mAccelerometerListener, mAccelerometer, hzToMys(currentSamplingRate.name()));
-        mSensorManager.registerListener(mMagnetometerListener, mMagnetometer, hzToMys(currentSamplingRate.name()));
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_dd_MM_HH_mm_ss");
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        String timestamp = sdf.format(calendar.getTime());
-        String folderPath = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/AccelerometerData";
-        if(folderExists(folderPath)) {
-            try {
-                filePath = folderPath + "/" + timestamp + "_" + currentActivity.name() + "_acc.txt";
-                writer = new FileWriter(filePath, true);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        startTimeInMillis = System.currentTimeMillis();
-        Log.d(TAG, "startTimeInMillis: " + Float.toString(startTimeInMillis));
+        intent = new Intent(getApplicationContext(), SensorService.class );
+        intent.putExtra("hz", hzToMys(currentSamplingRate.name()));
+        intent.putExtra("currentactivity", currentActivity.name());
+        startService(intent);
     }
 
     private int hzToMys(String hzString) {
@@ -203,7 +189,7 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     private void stopScan(){
-        mSensorManager.unregisterListener(mAccelerometerListener);
+        /*mSensorManager.unregisterListener(mAccelerometerListener);
         mSensorManager.unregisterListener(mMagnetometerListener);
         if(writer != null) {
             try {
@@ -213,7 +199,10 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
                 e.printStackTrace();
             }
         }
-        startTimeInMillis = 0;
+        startTimeInMillis = 0;*/
+        Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();
+        intent = new Intent(getApplicationContext(), SensorService.class);
+        stopService(intent);
     }
 
     private boolean validateUserInput(){
