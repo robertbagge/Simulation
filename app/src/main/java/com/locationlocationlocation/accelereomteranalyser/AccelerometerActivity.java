@@ -90,6 +90,13 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
     }
 
     @Override
+    public void onDestroy(){
+        super.onDestroy();
+        intent = new Intent(getApplicationContext(), SensorService.class);
+        stopService(intent);
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_accelerometer, menu);

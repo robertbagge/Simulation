@@ -94,11 +94,11 @@ public class SensorService extends Service {
         long recordingStartingTime = 0;
         @Override
         public void onSensorChanged(SensorEvent event){
-            if (recordingStartingTime == 0)
-                recordingStartingTime = event.timestamp;
+            //if (recordingStartingTime == 0)
+            //    recordingStartingTime = event.timestamp;
 
             mAcceleration = event.values;
-            new SensorLoggerTask().execute(new SensorEventValueHolder(event.timestamp - recordingStartingTime, mAcceleration[0], mAcceleration[1], mAcceleration[2], event.sensor.getType()));
+            new SensorLoggerTask().execute(new SensorEventValueHolder(event.timestamp, mAcceleration[0], mAcceleration[1], mAcceleration[2], event.sensor.getType()));
         }
 
         @Override
@@ -112,8 +112,8 @@ public class SensorService extends Service {
         @Override
         public void onSensorChanged(SensorEvent event){
 
-            if (recordingStartingTime == 0)
-                recordingStartingTime = event.timestamp;
+            //if (recordingStartingTime == 0)
+            //    recordingStartingTime = event.timestamp;
             mGeomagnetic = event.values;
             if (mAcceleration != null && mGeomagnetic != null) {
                 float R[] = new float[9];
@@ -122,7 +122,7 @@ public class SensorService extends Service {
                 if (success) {
                     float orientation[] = new float[3];
                     SensorManager.getOrientation(R, orientation);// orientation contains: azimut, pitch and roll
-                    new SensorLoggerTask().execute(new SensorEventValueHolder(event.timestamp - recordingStartingTime, 57.2957795f * orientation[0], 57.2957795f * orientation[1], 57.2957795f * orientation[2], event.sensor.getType()));
+                    new SensorLoggerTask().execute(new SensorEventValueHolder(event.timestamp, 57.2957795f * orientation[0], 57.2957795f * orientation[1], 57.2957795f * orientation[2], event.sensor.getType()));
                 }
             }
 
@@ -150,7 +150,7 @@ public class SensorService extends Service {
             AsyncTask<SensorEventValueHolder, Void, Void> {
         @Override
         protected Void doInBackground(SensorEventValueHolder... events) {
-            Log.d(SERVICE_TAG, String.valueOf(events.length));
+            //Log.d(SERVICE_TAG, String.valueOf(events.length));
             for(SensorEventValueHolder holder: events) {
                 sb.append(holder.timestamp + ", " + holder.value1 +
                         ", " + holder.value2 + ", " + holder.value3 + ", " + holder.type + "\n");
