@@ -1,4 +1,4 @@
-package com.locationlocationlocation.accelereomteranalyser;
+package com.locationlocationlocation.simulation;
 
 import android.app.Service;
 import android.content.Context;
@@ -9,14 +9,11 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.AsyncTask;
 import android.os.IBinder;
-import android.util.Log;
-import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 
 public class SensorService extends Service {

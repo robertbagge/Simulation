@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Accelerometer Analyser</string>
+    <string name="app_name">Device Simulation</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
-    <string name="title_activity_accelerometer">AccelerometerActivity</string>
+    <string name="title_activity_accelerometer">SimulationActivity</string>
 
 
     <string name="activity_heading">Choose an activity...</string>

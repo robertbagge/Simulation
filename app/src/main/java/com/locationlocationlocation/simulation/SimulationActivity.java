@@ -1,4 +1,4 @@
-package com.locationlocationlocation.accelereomteranalyser;
+package com.locationlocationlocation.simulation;
 
 import android.app.Activity;
 import android.content.Context;
@@ -22,11 +22,9 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 
 
-public class AccelerometerActivity extends Activity implements SensorEventListener {
+public class SimulationActivity extends Activity implements SensorEventListener {
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private Sensor mMagnetometer;
@@ -122,11 +120,11 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
         if (validateUserInput()){
             ((Button)findViewById(R.id.stop_button)).setVisibility(View.VISIBLE);
             view.setVisibility(View.GONE);
-            Toast.makeText(this, AccelerometerActivity.STARTED_RECORDING, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, SimulationActivity.STARTED_RECORDING, Toast.LENGTH_LONG).show();
             startScan();
 
         }else{
-            Toast.makeText(this, AccelerometerActivity.FAULTY_SETTINGS, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, SimulationActivity.FAULTY_SETTINGS, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -200,14 +198,14 @@ public class AccelerometerActivity extends Activity implements SensorEventListen
         mSensorManager.unregisterListener(mMagnetometerListener);
         if(writer != null) {
             try {
-                Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, SimulationActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();
                 writer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         startTimeInMillis = 0;*/
-        Toast.makeText(this, AccelerometerActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, SimulationActivity.STOPPED_RECORDING + "\n" +  filePath, Toast.LENGTH_LONG).show();
         intent = new Intent(getApplicationContext(), SensorService.class);
         stopService(intent);
     }

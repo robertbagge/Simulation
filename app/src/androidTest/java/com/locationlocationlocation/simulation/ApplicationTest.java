@@ -1,4 +1,4 @@
-package com.locationlocationlocation.accelereomteranalyser;
+package com.locationlocationlocation.simulation;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
