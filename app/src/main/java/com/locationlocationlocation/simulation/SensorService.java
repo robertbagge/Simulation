@@ -18,16 +18,11 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -37,11 +32,6 @@ public class SensorService extends Service {
 
     private static String FOLDER_NAME_ACCELEROMETER = "accelerometer_data";
     private static String FOLDER_NAME_WIFI = "wifi_data";
-
-    private final static String WIFI_DATA_FILE = "wifi_data.txt";
-    private final static String ACCELEROMETER_DATA_FILE = "accelerometer_data.txt";
-    OutputStreamWriter mOutputWifi;
-    OutputStreamWriter mOutputAccelerometer;
 
     private String mFolderPathWifi;
     private String mFolderPathAccelerometer;
@@ -67,48 +57,19 @@ public class SensorService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         TAG = SensorService.this.getClass().getSimpleName();
         Log.e(TAG, "onStartCommand()");
-        /*mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mAccelerometerListener = new AccelerometerEventListener();
         mMagnetometerListener = new MagnetometerEventListener();
         mSensorManager.registerListener(mAccelerometerListener, mAccelerometer, this.ACCELEROMETER_FREQUENCY);
         mSensorManager.registerListener(mMagnetometerListener, mMagnetometer, this.ACCELEROMETER_FREQUENCY);
-        this.sb = new StringBuffer();*/
+        this.sb = new StringBuffer();
 
         String sourceFolderName = intent.getStringExtra("folder_name");
         mFolderPathWifi = sourceFolderName + "/" + this.FOLDER_NAME_WIFI;
         mFolderPathAccelerometer = sourceFolderName + "/" + this.FOLDER_NAME_ACCELEROMETER;
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
-        //mWifiReceiver = new WifiScanReceiver();
-
-
-        try{
-            File mWifiOutputFile = new File(sourceFolderName + "/" + WIFI_DATA_FILE);
-            FileOutputStream mWifiOutputStream = new FileOutputStream(mWifiOutputFile);
-            mOutputWifi = new OutputStreamWriter(mWifiOutputStream);
-            mOutputWifi.write("Run initiated" + System.lineSeparator());
-            Log.e(TAG, "Writing to mOutputWifi initiated");
-        }catch(FileNotFoundException e1){
-            e1.printStackTrace();
-            Log.e(TAG, "Aborted, can't save to file");
-        }catch(IOException e2){
-            e2.printStackTrace();
-        }
-
-        try{
-            File mAccelerometerOutputFile = new File(sourceFolderName + "/" + ACCELEROMETER_DATA_FILE);
-            FileOutputStream mAccelerometerOutputStream = new FileOutputStream(mAccelerometerOutputFile);
-            mOutputAccelerometer = new OutputStreamWriter(mAccelerometerOutputStream);
-            mOutputAccelerometer.write("Run initiated" + System.lineSeparator());
-            Log.e(TAG, "Writing to mOutputWifi initiated");
-        }catch(FileNotFoundException e1){
-            e1.printStackTrace();
-            Log.e(TAG, "Aborted, can't save to file");
-        }catch(IOException e2){
-            e2.printStackTrace();
-        }
 
         folderExists(mFolderPathWifi);
         folderExists(mFolderPathAccelerometer);
@@ -116,27 +77,16 @@ public class SensorService extends Service {
         Toast.makeText(this, sourceFolderName, Toast.LENGTH_LONG).show();
         AsyncTimer();
 
-
         return START_STICKY;
     }
 
     @Override
     public void onDestroy(){
+        super.onDestroy();
         Log.e(TAG, "onDestroy()");
         timer.cancel();
-        //mSensorManager.unregisterListener(mAccelerometerListener);
-        //mSensorManager.unregisterListener(mMagnetometerListener);
-        //unregisterReceiver(mWifiReceiver);
-
-        //writeToFile();
-        try {
-            Log.e(TAG, "closing mOutputWifi");
-            mOutputWifi.write("Run Closed" + System.lineSeparator());
-            mOutputWifi.close();
-        } catch (IOException e) {
-            Log.e(TAG, "io exception when closing wifi output stream");
-            e.printStackTrace();
-        }
+        mSensorManager.unregisterListener(mAccelerometerListener);
+        mSensorManager.unregisterListener(mMagnetometerListener);
     }
 
     public void AsyncTimer() {
@@ -158,8 +108,12 @@ public class SensorService extends Service {
                             calendar.setTimeInMillis(scanId);
                             String timestamp = sdf.format(calendar.getTime());
 
-                            WifiScan wifiScan = new WifiScan(mFolderPathWifi + "/" + timestamp + ".txt");
+                            WifiScan wifiScan = new WifiScan(mFolderPathWifi + "/" + timestamp + "_snap.txt");
                             wifiScan.execute();
+
+                            AccelerometerScan accScan = new AccelerometerScan(mFolderPathAccelerometer + "/" + timestamp + "_acc.txt");
+                            accScan.execute();
+
                         }catch (Exception e) {}
                     }
                 });
@@ -167,6 +121,7 @@ public class SensorService extends Service {
         };
         timer.schedule(doAsynchronousTask, 0, 30000); // Repeat in every 30000 sec
     }
+
 
     // Async task - wifi scan
     public class WifiScan extends AsyncTask<Void, String, Void> {
@@ -187,12 +142,6 @@ public class SensorService extends Service {
 
         @Override
         protected Void doInBackground(Void... params) {
-            try {
-                Log.e(TAG, "Writing to wifi output stream new scan");
-                mOutputWifi.write("===========================" + System.lineSeparator());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             registerReceiver(new WifiScanReceiver(this.filePath), new IntentFilter(
                     WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
             mWifiManager.startScan();
@@ -200,25 +149,34 @@ public class SensorService extends Service {
         }
     }
 
-    private void writeToFile() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_dd_MM_HH_mm_ss");
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        String timestamp = sdf.format(calendar.getTime());
-        String folderPath = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/AccelerometerData";
-        if(folderExists(folderPath)) {
+    public class AccelerometerScan extends AsyncTask<Void, String, Void>{
+        String filePath;
+
+        public AccelerometerScan(String filePath){
+            this.filePath = filePath;
+        }
+
+        protected void onPreExecute() {
+
+        }
+
+        protected void onPostExecute(Void results) {
+
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
             try {
-                String filePath = folderPath + "/" + timestamp + "_" + currentActivityName + ".txt";
-                writer = new FileWriter(filePath, true);
+                FileWriter writer = new FileWriter(filePath, true);
+                Log.e(TAG, "sb length before " + Integer.toString(sb.length()));
                 writer.write(sb.toString());
+                sb.delete(0, sb.length());
+                Log.e(TAG, "sb length after " + Integer.toString(sb.length()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-        try {
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            return null;
         }
     }
 
@@ -316,39 +274,16 @@ public class SensorService extends Service {
         @Override
         public void onReceive(Context c, Intent intent) {
             List<ScanResult> wifiScanList = mWifiManager.getScanResults();
-            try {
-                mOutputWifi.write(filePath + System.lineSeparator());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
             FileWriter writer = null;
             try {
                 writer = new FileWriter(filePath, true);
 
-                List<String[]> data = new ArrayList<String[]>();
                 ScanResult row = null;
                 for(int i = 0; i < wifiScanList.size(); i++){
                     row = wifiScanList.get(i);
                     writer.write(row.BSSID + ", " + row.SSID + ", " + String.valueOf(convertFrequencyToChannel(row.frequency)) + ", " + String.valueOf(row.level) + System.lineSeparator());
-                    //data.add(new String[] {row.BSSID, row.SSID, String.valueOf(convertFrequencyToChannel(row.frequency)), String.valueOf(row.level)});
                 }
-                /*for (int i = 0; i < wifiScanList.size(); i++) {
-                    ScanResult sr1 = mWifiManager.getScanResults().get(i);
-                    System.out.println("BSSID: " + sr1.BSSID);
-                    System.out.println("RSSI: " + sr1.level);
-
-                    String str = "BSSID: " + sr1.BSSID + " " + "Level: " + sr1.level;
-
-                    try {
-                        Log.e(TAG, "Writing to mOutputWifi onReceive");
-                        mOutputWifi.write(str.toString() + System.lineSeparator());
-                        writer.write(str.toString());
-                    } catch (IOException e) {
-                        Log.e(TAG, "Error when writing wifi scanResults to file");
-                        e.printStackTrace();
-                    }
-                }*/
-                //writer.writeAll(data);
                 writer.close();
             }catch(IOException e){
                 e.printStackTrace();
