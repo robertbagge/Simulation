@@ -1,1 +1,2 @@
-include ':app'
+include ':app', ':opencsv-3.3'
+project(':opencsv-3.3').projectDir = new File('libs/opencsv-3.3')

@@ -17,10 +17,13 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.opencsv.CSVWriter;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Timer;
@@ -46,7 +49,7 @@ public class SensorService extends Service {
     private FileWriter writer;
     private String currentActivityName;
     private StringBuffer sb;
-    private static int ACCELEROMETER_FREQUENCY = 100;
+    private static int ACCELEROMETER_LATENCY = 10000; //100Hz
     private Handler wHandler;
     private Timer timer;
     private TimerTask doAsynchronousTask;
@@ -62,8 +65,8 @@ public class SensorService extends Service {
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mAccelerometerListener = new AccelerometerEventListener();
         mMagnetometerListener = new MagnetometerEventListener();
-        mSensorManager.registerListener(mAccelerometerListener, mAccelerometer, this.ACCELEROMETER_FREQUENCY);
-        mSensorManager.registerListener(mMagnetometerListener, mMagnetometer, this.ACCELEROMETER_FREQUENCY);
+        mSensorManager.registerListener(mAccelerometerListener, mAccelerometer, this.ACCELEROMETER_LATENCY);
+        mSensorManager.registerListener(mMagnetometerListener, mMagnetometer, this.ACCELEROMETER_LATENCY);
         this.sb = new StringBuffer();
 
         String sourceFolderName = intent.getStringExtra("folder_name");
@@ -108,7 +111,7 @@ public class SensorService extends Service {
                             calendar.setTimeInMillis(scanId);
                             String timestamp = sdf.format(calendar.getTime());
 
-                            WifiScan wifiScan = new WifiScan(mFolderPathWifi + "/" + timestamp + "_snap.txt");
+                            WifiScan wifiScan = new WifiScan(mFolderPathWifi + "/" + timestamp + "_snap.csv");
                             wifiScan.execute();
 
                             AccelerometerScan accScan = new AccelerometerScan(mFolderPathAccelerometer + "/" + timestamp + "_acc.txt");
@@ -275,7 +278,7 @@ public class SensorService extends Service {
         public void onReceive(Context c, Intent intent) {
             List<ScanResult> wifiScanList = mWifiManager.getScanResults();
 
-            FileWriter writer = null;
+            /*FileWriter writer = null;
             try {
                 writer = new FileWriter(filePath, true);
 
@@ -287,7 +290,23 @@ public class SensorService extends Service {
                 writer.close();
             }catch(IOException e){
                 e.printStackTrace();
+            }*/
+
+            CSVWriter writer = null;
+            try {
+                writer = new CSVWriter(new FileWriter(filePath), ',');
+                List<String[]> data = new ArrayList<String[]>();
+                ScanResult row = null;
+                for(int i = 0; i < wifiScanList.size(); i++){
+                    row = wifiScanList.get(i);
+                    data.add(new String[] {row.BSSID, row.SSID, String.valueOf(convertFrequencyToChannel(row.frequency)), String.valueOf(row.level)});
+                }
+                writer.writeAll(data);
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+
             unregisterReceiver(this);
         }
     }
